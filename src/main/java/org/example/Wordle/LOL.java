@@ -12,6 +12,7 @@ public class LOL extends JFrame  implements ActionListener {
     public LOL(){
         startPanel.loginButton.addActionListener(this);
         loginPanel.loginButton.addActionListener(this);
+        //gamePanel.regenButton.addActionListener(this);
         this.add(loginPanel);
         this.add(gamePanel);
         gamePanel.setVisible(false);
@@ -50,6 +51,12 @@ public class LOL extends JFrame  implements ActionListener {
                 System.err.println("Database error: " + ex.getMessage());
             }
         }
+        /*if(e.getSource() == gamePanel.regenButton){
+            gamePanel.wordToGuess = gamePanel.word.getRandomWord();
+            System.out.println(gamePanel.wordToGuess);
+        }
+        */
+
 
     }
 
