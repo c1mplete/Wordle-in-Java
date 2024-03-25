@@ -7,18 +7,21 @@ import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GamePanel extends JPanel {
-    int i
+    String word2;
     JTextField charFields[][] = new JTextField[6][5];
     JButton submitButton;
     int currentRow = 0;
     String wordToGuess = "";
     GetRandomWordFromDB word = new GetRandomWordFromDB();
+    List<Character> wordToGuessChars = new ArrayList<>();
+    boolean[] rowLocked = new boolean[6];
 
     public GamePanel() {
-        wordToGuess = word.getRandomWord();
-        System.out.println(wordToGuess);
+        generateNewWord(); // Initial word generation
 
         for (int i = 0; i < charFields.length; i++) {
             for (int j = 0; j < charFields[i].length; j++) {
@@ -42,13 +45,19 @@ public class GamePanel extends JPanel {
                     }
 
                     @Override
-                    public void removeUpdate(DocumentEvent e) {}
+                    public void removeUpdate(DocumentEvent e) {
+                    }
 
                     @Override
-                    public void changedUpdate(DocumentEvent e) {}
+                    public void changedUpdate(DocumentEvent e) {
+                    }
                 });
 
                 add(charFields[i][j]);
+            }
+            // Initially, only the first row is unlocked
+            if (i != 0) {
+                lockRow(i);
             }
         }
 
@@ -65,51 +74,118 @@ public class GamePanel extends JPanel {
         submitButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String inputtedWord = "";
-                for (int i = 0; i < charFields.length; i++) {
-                    for (int j = 0; j < charFields[i].length; j++) {
-                        inputtedWord += charFields[i][j].getText();
-                    }
-                }
-
-                compareWords(inputtedWord);
-                moveToNextRow();
+                handleSubmission();
             }
         });
     }
 
-    private void compareWords(String inputtedWord) {
-        for (int i = 0; i < charFields.length; i++) {
-            for (int j = 0; j < charFields[i].length; j++) {
-                char inputChar = inputtedWord.charAt(j);
-                char targetChar = wordToGuess.charAt(j);
+    private void handleSubmission() {
+        String inputWord = "";
+        for (int i = 0; i < charFields[currentRow].length; i++) {
+            inputWord += charFields[currentRow][i].getText();
+        }
 
-                // Only set the background color for the specific text field
-                charFields[i][j].setBackground(null); // Reset to default
-                if (inputChar == targetChar && ) {
-                    charFields[i][j].setBackground(Color.GREEN);
-                } else if (wordToGuess.contains(String.valueOf(inputChar))) {
-                    charFields[i][j].setBackground(Color.YELLOW);
-                } else {
-                    charFields[i][j].setBackground(Color.GRAY);
+        // Check if the input word matches the word to guess
+        if (inputWord.equals(wordToGuess)) {
+            // Clear text fields
+            for (int i = 0; i < charFields[currentRow].length; i++) {
+                charFields[currentRow][i].setText("");
+            }
+            // Redraw the UI with a new word
+            redrawUI();
+            // Reset current row
+            currentRow = 0;
+            // Reset UI
+            resetUI();
+        }
+
+        // Move to the next row if not at the last row
+        if (currentRow < 5) {
+            currentRow++;
+        } else {
+            // Check if all rows are locked
+            boolean allRowsLocked = true;
+            for (boolean locked : rowLocked) {
+                if (!locked) {
+                    allRowsLocked = false;
+                    break;
                 }
             }
-        }
-    }
-
-
-    private void moveToNextRow() {
-        // Disable the current row
-        for (int j = 0; j < charFields[currentRow].length; j++) {
-            charFields[currentRow][j].setEditable(false);
-        }
-
-        // Enable the next row
-        if (currentRow < charFields.length - 1) {
-            currentRow++;
-            for (int j = 0; j < charFields[currentRow].length; j++) {
-                charFields[currentRow][j].setEditable(true);
+            if (allRowsLocked) {
+                gameOver();
             }
         }
     }
+
+
+
+    private void unlockRow(int row) {
+        for (int i = 0; i < charFields[row].length; i++) {
+            charFields[row][i].setEnabled(true); // Enable text fields in the row
+        }
+    }
+
+    private void lockRow(int row) {
+        for (int i = 0; i < charFields[row].length; i++) {
+            charFields[row][i].setEnabled(false); // Disable text fields in the row
+        }
+    }
+    private void generateNewWord() {
+        String newWord = null;
+        do {
+            newWord = word.getRandomWord();
+            System.out.println(newWord);
+        } while (newWord.equals(wordToGuess)); // Repeat until a different word is generated
+        wordToGuess = newWord;
+        System.out.println(wordToGuess);
+        wordToGuessChars.clear();
+        for (char c : wordToGuess.toCharArray()) {
+            wordToGuessChars.add(c);
+        }
+    }
+
+    private void resetUI() {
+        // Clear background colors of text fields
+        for (int i = 0; i < charFields.length; i++) {
+            for (int j = 0; j < charFields[i].length; j++) {
+                charFields[i][j].setBackground(null);
+            }
+        }
+        // Lock all rows except the first one
+        for (int i = 0; i < rowLocked.length; i++) {
+            if (i == 0) {
+                rowLocked[i] = false;
+                unlockRow(i);
+            } else {
+                rowLocked[i] = true;
+                lockRow(i);
+            }
+        }
+    }
+
+    private void redrawUI() {
+        // Clear all text fields
+        for (int i = 0; i < charFields.length; i++) {
+            for (int j = 0; j < charFields[i].length; j++) {
+                charFields[i][j].setText("");
+            }
+        }
+        // Clear backgrounds of text fields
+        for (int i = 0; i < charFields[currentRow].length; i++) {
+            charFields[currentRow][i].setBackground(null);
+        }
+    }
+
+
+    private void gameOver() {
+        JOptionPane.showMessageDialog(null,
+                "Game Over! The correct word was: " + wordToGuess,
+                "Game Over", JOptionPane.INFORMATION_MESSAGE);
+        resetUI();
+        generateNewWord();
+        currentRow = 0;
+    }
 }
+
+
+
