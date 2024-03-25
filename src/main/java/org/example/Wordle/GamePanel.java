@@ -10,13 +10,12 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GamePanel extends JPanel {
-    String word2;
+public class GamePanel extends JPanel implements ActionListener {
     JTextField charFields[][] = new JTextField[6][5];
+    GetRandomWordFromDB word = new GetRandomWordFromDB();
     JButton submitButton;
     int currentRow = 0;
     String wordToGuess = "";
-    GetRandomWordFromDB word = new GetRandomWordFromDB();
     List<Character> wordToGuessChars = new ArrayList<>();
     boolean[] rowLocked = new boolean[6];
 
@@ -71,19 +70,27 @@ public class GamePanel extends JPanel {
         SwingUtilities.invokeLater(() -> charFields[0][0].requestFocus());
 
         // Add an ActionListener to the Submit button
-        submitButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                handleSubmission();
-            }
-        });
+        submitButton.addActionListener(this);
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == submitButton) {
+            handleSubmission();
+        }
     }
 
     private void handleSubmission() {
-        String inputWord = "";
+        // Reset background colors of text fields for the current row
         for (int i = 0; i < charFields[currentRow].length; i++) {
-            inputWord += charFields[currentRow][i].getText();
+            charFields[currentRow][i].setBackground(null);
         }
+
+        StringBuilder inputWordBuilder = new StringBuilder();
+        for (int i = 0; i < charFields[currentRow].length; i++) {
+            inputWordBuilder.append(charFields[currentRow][i].getText());
+        }
+        String inputWord = inputWordBuilder.toString().toLowerCase();
 
         // Check if the input word matches the word to guess
         if (inputWord.equals(wordToGuess)) {
@@ -97,6 +104,29 @@ public class GamePanel extends JPanel {
             currentRow = 0;
             // Reset UI
             resetUI();
+            return;
+        }
+
+        // Compare guessed word with the word to guess
+        for (int i = 0; i < wordToGuessChars.size(); i++) {
+            char guessedChar = inputWord.charAt(i);
+            char actualChar = wordToGuessChars.get(i);
+
+            if (guessedChar == actualChar) {
+                charFields[currentRow][i].setBackground(Color.GREEN); // Correct letter in correct position
+            } else if (wordToGuessChars.contains(guessedChar)) {
+                charFields[currentRow][i].setBackground(Color.YELLOW); // Correct letter in wrong position
+            } else {
+                charFields[currentRow][i].setBackground(Color.GRAY); // Incorrect letter
+            }
+        }
+
+        // Lock the current row
+        lockRow(currentRow);
+
+        // Unlock the row below the current row if not at the last row
+        if (currentRow < 5) {
+            unlockRow(currentRow + 1);
         }
 
         // Move to the next row if not at the last row
@@ -119,6 +149,7 @@ public class GamePanel extends JPanel {
 
 
 
+
     private void unlockRow(int row) {
         for (int i = 0; i < charFields[row].length; i++) {
             charFields[row][i].setEnabled(true); // Enable text fields in the row
@@ -130,25 +161,29 @@ public class GamePanel extends JPanel {
             charFields[row][i].setEnabled(false); // Disable text fields in the row
         }
     }
+
     private void generateNewWord() {
-        String newWord = null;
+        String newWord;
         do {
             newWord = word.getRandomWord();
-            System.out.println(newWord);
+            System.out.println("Generated word: " + newWord); // Print the generated word
         } while (newWord.equals(wordToGuess)); // Repeat until a different word is generated
-        wordToGuess = newWord;
-        System.out.println(wordToGuess);
+        wordToGuess = newWord.toLowerCase();
         wordToGuessChars.clear();
         for (char c : wordToGuess.toCharArray()) {
             wordToGuessChars.add(c);
         }
+        currentRow = 0; // Reset current row to start from the beginning
     }
 
+
+
     private void resetUI() {
-        // Clear background colors of text fields
+        // Clear background colors of text fields and reset their contents
         for (int i = 0; i < charFields.length; i++) {
             for (int j = 0; j < charFields[i].length; j++) {
                 charFields[i][j].setBackground(null);
+                charFields[i][j].setText("");
             }
         }
         // Lock all rows except the first one
@@ -161,21 +196,23 @@ public class GamePanel extends JPanel {
                 lockRow(i);
             }
         }
+        // Clear the list of characters representing the word to guess
+        wordToGuessChars.clear();
     }
 
+
     private void redrawUI() {
-        // Clear all text fields
-        for (int i = 0; i < charFields.length; i++) {
-            for (int j = 0; j < charFields[i].length; j++) {
-                charFields[i][j].setText("");
-            }
+        // Generate a new word
+        generateNewWord();
+        // Reset text fields with new word
+        for (int i = 0; i < charFields[currentRow].length; i++) {
+            charFields[currentRow][i].setText(Character.toString(wordToGuessChars.get(i)));
         }
         // Clear backgrounds of text fields
         for (int i = 0; i < charFields[currentRow].length; i++) {
             charFields[currentRow][i].setBackground(null);
         }
     }
-
 
     private void gameOver() {
         JOptionPane.showMessageDialog(null,
@@ -186,6 +223,3 @@ public class GamePanel extends JPanel {
         currentRow = 0;
     }
 }
-
-
-

@@ -12,7 +12,7 @@ public class LOL extends JFrame  implements ActionListener {
     public LOL(){
         startPanel.loginButton.addActionListener(this);
         loginPanel.loginButton.addActionListener(this);
-        //gamePanel.regenButton.addActionListener(this);
+        gamePanel.submitButton.addActionListener(this);
         this.add(loginPanel);
         this.add(gamePanel);
         gamePanel.setVisible(false);
